@@ -2,7 +2,6 @@ package github_hooks
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -12,13 +11,18 @@ import (
 
 func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *github.CheckSuiteEvent) error {
 
-	logger.Info(fmt.Sprintf("Handle Check Suite ('%s')", *event.Action))
+	logger = logger.With(
+		slog.Group("event",
+			slog.String("action", *event.Action),
+			slog.String("repo", *event.Repo.FullName),
+		),
+	)
+
+	logger.Info("Handle Check Suite Event")
 
 	// //println(string(b))
 
-	if *event.Action == "requested" || *event.Action == "re-requested" {
-
-		logger.Debug("Process")
+	if *event.Action == "requested" || *event.Action == "rerequested" {
 
 		// Action: requested
 		// kick off a temporal workflow at this point to allow the creation of the suite.
@@ -37,6 +41,7 @@ func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *gith
 		var opts github.CreateCheckRunOptions
 		opts.HeadSHA = *event.CheckSuite.HeadSHA
 		opts.Name = "POC Run"
+		opts.Status = github.String("queued")
 
 		_, _, err = client.Checks.CreateCheckRun(ctx, *event.Repo.Owner.Login, *event.Repo.Name, opts)
 
@@ -55,7 +60,14 @@ func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *gith
 
 func HandleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github.CheckRunEvent) error {
 
-	logger.Info(fmt.Sprintf("Handle Check Run ('%s')", *event.Action))
+	logger = logger.With(
+		slog.Group("event",
+			slog.String("action", *event.Action),
+			slog.String("repo", *event.Repo.FullName),
+		),
+	)
+
+	logger.Info("Handle Check Run Event")
 
 	// //println(string(b))
 
@@ -65,7 +77,8 @@ func HandleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github
 		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 385716, 41469183, "poc.pem")
 
 		if err != nil {
-			// Handle error.
+			logger.Error(err.Error())
+			return err
 		}
 
 		// Use installation transport with client.

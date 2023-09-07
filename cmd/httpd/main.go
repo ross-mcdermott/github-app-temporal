@@ -21,7 +21,8 @@ func main() {
 		Level: slog.LevelDebug,
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	//logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
 
 	// Register the routes to serve
 	health.RegisterRoutes(r, logger)
