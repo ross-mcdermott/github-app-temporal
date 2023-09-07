@@ -2,6 +2,7 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
 *.pem
+scratch.txt
 
 # Binaries for programs and plugins
 *.exe

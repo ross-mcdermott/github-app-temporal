@@ -222,46 +222,13 @@ type CheckSuiteWebhook struct {
 		Before       string `json:"before,omitempty"`
 		After        string `json:"after,omitempty"`
 		PullRequests []struct {
-			URL    string `json:"url,omitempty"`
-			ID     int    `json:"id,omitempty"`
-			Number int    `json:"number,omitempty"`
-			Head   struct {
-				Ref  string `json:"ref,omitempty"`
-				Sha  string `json:"sha,omitempty"`
-				Repo struct {
-					ID   int    `json:"id,omitempty"`
-					URL  string `json:"url,omitempty"`
-					Name string `json:"name,omitempty"`
-				} `json:"repo,omitempty"`
-			} `json:"head,omitempty"`
-			Base struct {
-				Ref  string `json:"ref,omitempty"`
-				Sha  string `json:"sha,omitempty"`
-				Repo struct {
-					ID   int    `json:"id,omitempty"`
-					URL  string `json:"url,omitempty"`
-					Name string `json:"name,omitempty"`
-				} `json:"repo,omitempty"`
-			} `json:"base,omitempty"`
+			URL    string    `json:"url,omitempty"`
+			ID     int       `json:"id,omitempty"`
+			Number int       `json:"number,omitempty"`
+			Head   CommitRef `json:"head,omitempty"`
+			Base   CommitRef `json:"base,omitempty"`
 		} `json:"pull_requests,omitempty"`
-		App struct {
-			ID          int       `json:"id,omitempty"`
-			Slug        string    `json:"slug,omitempty"`
-			NodeID      string    `json:"node_id,omitempty"`
-			Owner       User      `json:"owner,omitempty"`
-			Name        string    `json:"name,omitempty"`
-			Description string    `json:"description,omitempty"`
-			ExternalURL string    `json:"external_url,omitempty"`
-			HTMLURL     string    `json:"html_url,omitempty"`
-			CreatedAt   time.Time `json:"created_at,omitempty"`
-			UpdatedAt   time.Time `json:"updated_at,omitempty"`
-			Permissions struct {
-				Checks       string `json:"checks,omitempty"`
-				Metadata     string `json:"metadata,omitempty"`
-				PullRequests string `json:"pull_requests,omitempty"`
-			} `json:"permissions,omitempty"`
-			Events []string `json:"events,omitempty"`
-		} `json:"app,omitempty"`
+		App                  App       `json:"app,omitempty"`
 		CreatedAt            time.Time `json:"created_at,omitempty"`
 		UpdatedAt            time.Time `json:"updated_at,omitempty"`
 		Rerequestable        bool      `json:"rerequestable,omitempty"`
@@ -283,6 +250,129 @@ type CheckSuiteWebhook struct {
 			} `json:"committer,omitempty"`
 		} `json:"head_commit,omitempty"`
 	} `json:"check_suite,omitempty"`
+	Repository   Repository `json:"repository,omitempty"`
+	Sender       User       `json:"sender,omitempty"`
+	Installation struct {
+		ID     int    `json:"id,omitempty"`
+		NodeID string `json:"node_id,omitempty"`
+	} `json:"installation,omitempty"`
+}
+
+type App struct {
+	ID          int       `json:"id,omitempty"`
+	Slug        string    `json:"slug,omitempty"`
+	NodeID      string    `json:"node_id,omitempty"`
+	Owner       User      `json:"owner,omitempty"`
+	Name        string    `json:"name,omitempty"`
+	Description string    `json:"description,omitempty"`
+	ExternalURL string    `json:"external_url,omitempty"`
+	HTMLURL     string    `json:"html_url,omitempty"`
+	CreatedAt   time.Time `json:"created_at,omitempty"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty"`
+	Permissions struct {
+		Checks       string `json:"checks,omitempty"`
+		Metadata     string `json:"metadata,omitempty"`
+		PullRequests string `json:"pull_requests,omitempty"`
+	} `json:"permissions,omitempty"`
+	Events []string `json:"events,omitempty"`
+}
+
+type CommitRef struct {
+	Ref  string `json:"ref,omitempty"`
+	Sha  string `json:"sha,omitempty"`
+	Repo struct {
+		ID   int    `json:"id,omitempty"`
+		URL  string `json:"url,omitempty"`
+		Name string `json:"name,omitempty"`
+	} `json:"repo,omitempty"`
+}
+
+type CheckRunWebhook struct {
+	Action   string `json:"action,omitempty"`
+	CheckRun struct {
+		ID          int64     `json:"id,omitempty"`
+		Name        string    `json:"name,omitempty"`
+		NodeID      string    `json:"node_id,omitempty"`
+		HeadSha     string    `json:"head_sha,omitempty"`
+		ExternalID  string    `json:"external_id,omitempty"`
+		URL         string    `json:"url,omitempty"`
+		HTMLURL     string    `json:"html_url,omitempty"`
+		DetailsURL  string    `json:"details_url,omitempty"`
+		Status      string    `json:"status,omitempty"`
+		Conclusion  any       `json:"conclusion,omitempty"`
+		StartedAt   time.Time `json:"started_at,omitempty"`
+		CompletedAt any       `json:"completed_at,omitempty"`
+		Output      struct {
+			Title            any    `json:"title,omitempty"`
+			Summary          any    `json:"summary,omitempty"`
+			Text             any    `json:"text,omitempty"`
+			AnnotationsCount int    `json:"annotations_count,omitempty"`
+			AnnotationsURL   string `json:"annotations_url,omitempty"`
+		} `json:"output,omitempty"`
+		CheckSuite struct {
+			ID           int64  `json:"id,omitempty"`
+			NodeID       string `json:"node_id,omitempty"`
+			HeadBranch   string `json:"head_branch,omitempty"`
+			HeadSha      string `json:"head_sha,omitempty"`
+			Status       string `json:"status,omitempty"`
+			Conclusion   any    `json:"conclusion,omitempty"`
+			URL          string `json:"url,omitempty"`
+			Before       string `json:"before,omitempty"`
+			After        string `json:"after,omitempty"`
+			PullRequests []struct {
+				URL    string    `json:"url,omitempty"`
+				ID     int       `json:"id,omitempty"`
+				Number int       `json:"number,omitempty"`
+				Head   CommitRef `json:"head,omitempty"`
+				Base   CommitRef `json:"base,omitempty"`
+			} `json:"pull_requests,omitempty"`
+			App struct {
+				ID          int       `json:"id,omitempty"`
+				Slug        string    `json:"slug,omitempty"`
+				NodeID      string    `json:"node_id,omitempty"`
+				Owner       User      `json:"owner,omitempty"`
+				Name        string    `json:"name,omitempty"`
+				Description string    `json:"description,omitempty"`
+				ExternalURL string    `json:"external_url,omitempty"`
+				HTMLURL     string    `json:"html_url,omitempty"`
+				CreatedAt   time.Time `json:"created_at,omitempty"`
+				UpdatedAt   time.Time `json:"updated_at,omitempty"`
+				Permissions struct {
+					Checks       string `json:"checks,omitempty"`
+					Metadata     string `json:"metadata,omitempty"`
+					PullRequests string `json:"pull_requests,omitempty"`
+				} `json:"permissions,omitempty"`
+				Events []string `json:"events,omitempty"`
+			} `json:"app,omitempty"`
+			CreatedAt time.Time `json:"created_at,omitempty"`
+			UpdatedAt time.Time `json:"updated_at,omitempty"`
+		} `json:"check_suite,omitempty"`
+		App struct {
+			ID          int       `json:"id,omitempty"`
+			Slug        string    `json:"slug,omitempty"`
+			NodeID      string    `json:"node_id,omitempty"`
+			Owner       User      `json:"owner,omitempty"`
+			Name        string    `json:"name,omitempty"`
+			Description string    `json:"description,omitempty"`
+			ExternalURL string    `json:"external_url,omitempty"`
+			HTMLURL     string    `json:"html_url,omitempty"`
+			CreatedAt   time.Time `json:"created_at,omitempty"`
+			UpdatedAt   time.Time `json:"updated_at,omitempty"`
+			Permissions struct {
+				Checks       string `json:"checks,omitempty"`
+				Metadata     string `json:"metadata,omitempty"`
+				PullRequests string `json:"pull_requests,omitempty"`
+			} `json:"permissions,omitempty"`
+			Events []string `json:"events,omitempty"`
+		} `json:"app,omitempty"`
+		PullRequests []struct {
+			URL    string    `json:"url,omitempty"`
+			ID     int       `json:"id,omitempty"`
+			Number int       `json:"number,omitempty"`
+			Head   CommitRef `json:"head,omitempty"`
+			Base   CommitRef `json:"base,omitempty"`
+		} `json:"pull_requests,omitempty"`
+	} `json:"check_run,omitempty"`
 	Repository   Repository `json:"repository,omitempty"`
 	Sender       User       `json:"sender,omitempty"`
 	Installation struct {
