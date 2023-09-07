@@ -28,11 +28,5 @@ func main() {
 	health.RegisterRoutes(r, logger)
 	ghhooks.RegisterRoutes(r, logger)
 
-	// Register routes as groups to allow differing middleware to be
-	// associated with each set.
-
-	// r.Group(health.Routes)       // Health probes
-	// r.Group(github_hooks.Routes) // Github Hooks
-
 	http.ListenAndServe(":3000", r)
 }
