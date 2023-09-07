@@ -12,6 +12,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.10 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v29 v29.0.2 // indirect
 	github.com/google/go-github/v53 v53.2.0 // indirect
 	github.com/google/go-github/v55 v55.0.0 // indirect

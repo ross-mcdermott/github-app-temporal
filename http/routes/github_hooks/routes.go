@@ -3,12 +3,11 @@ package github_hooks
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/go-github/github"
 )
 
 func RegisterRoutes(router chi.Router, logger *slog.Logger) {
@@ -22,53 +21,69 @@ func RegisterRoutes(router chi.Router, logger *slog.Logger) {
 		r.Post(route, func(w http.ResponseWriter, r *http.Request) {
 
 			ctx := r.Context()
-
 			r = r.WithContext(ctx)
 
-			eventType := r.Header.Get("X-GitHub-Event")
-			deliveryID := r.Header.Get("X-GitHub-Delivery")
-
-			if eventType == "" {
-				logger.Error("Webhook missing 'X-GitHub-Event' header")
-			}
-
-			if deliveryID == "" {
-				logger.Error("Webhook missing 'X-GitHub-Delivery' header")
-			}
-
-			// track the event and delivery id generically.
-			logger := slog.New(logger.Handler()).WithGroup("github").With(
-				slog.String("event", eventType),
-				slog.String("delivery_id", deliveryID),
-			)
-
-			logger.Debug("Recieved GitHub WebHook event")
-
-			// read to slice from stream
-			b, err := io.ReadAll(r.Body)
+			payload, err := github.ValidatePayload(r, []byte("0695679902"))
 			if err != nil {
+				logger.Error("Unable to validate payload")
+				return
+			}
+			event, err := github.ParseWebHook(github.WebHookType(r), payload)
+			if err != nil {
+				logger.Error("Unable to parse payload")
 				return
 			}
 
-			if eventType == "check_suite" {
-				err = HandleCheckSuiteEvent(ctx, logger, b, deliveryID)
+			switch event := event.(type) {
+			case *github.CheckSuiteEvent:
+				HandleCheckSuiteEvent(ctx, logger, event)
+			case *github.CheckRunEvent:
+				HandleCheckRunEvent(ctx, logger, event)
 
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
 			}
 
-			if eventType == "check_run" {
-				time.Sleep(5 * time.Second)
-				//println(string(b))
-				err = HandleCheckRunEvent(ctx, logger, b, deliveryID)
+			// eventType := r.Header.Get("X-GitHub-Event")
+			// deliveryID := r.Header.Get("X-GitHub-Delivery")
 
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-			}
+			// if eventType == "" {
+			// 	logger.Error("Webhook missing 'X-GitHub-Event' header")
+			// }
+
+			// if deliveryID == "" {
+			// 	logger.Error("Webhook missing 'X-GitHub-Delivery' header")
+			// }
+
+			// // track the event and delivery id generically.
+			// logger := slog.New(logger.Handler()).WithGroup("github").With(
+			// 	slog.String("event", eventType),
+			// 	slog.String("delivery_id", deliveryID),
+			// )
+
+			// // read to slice from stream
+			// b, err := io.ReadAll(r.Body)
+			// if err != nil {
+			// 	return
+			// }
+
+			// if eventType == "check_suite" {
+			// 	err = HandleCheckSuiteEvent(ctx, logger, b, deliveryID)
+
+			// 	if err != nil {
+			// 		http.Error(w, err.Error(), http.StatusBadRequest)
+			// 		return
+			// 	}
+			// }
+
+			// if eventType == "check_run" {
+			// 	time.Sleep(5 * time.Second)
+			// 	//println(string(b))
+			// 	err = HandleCheckRunEvent(ctx, logger, b, deliveryID)
+
+			// 	if err != nil {
+			// 		http.Error(w, err.Error(), http.StatusBadRequest)
+			// 		return
+			// 	}
+			// }
 
 			data := status{
 				Ok: true,
