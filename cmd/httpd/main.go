@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	health "github.com/ross-mcdermott/github-app-temporal/http/core"
+	"github.com/ross-mcdermott/github-app-temporal/http/handlers"
 	"github.com/ross-mcdermott/github-app-temporal/http/webhooks"
 	"go.temporal.io/sdk/client"
 )
@@ -41,7 +41,7 @@ func main() {
 
 	// Register health check endpoint
 	const health_route = "/healthz"
-	healthCheck := health.NewHealthHandler(logger)
+	healthCheck := handlers.NewHealthHandler(logger)
 	healthCheck.Register(r, health_route)
 
 	// Register the github hooks
