@@ -7,17 +7,15 @@ import (
 	"github.com/google/go-github/github"
 )
 
-// YourActivityObject is the struct that maintains shared state across Activities.
-// If the Worker crashes this Activity object loses its state.
 type GitHubActivities struct {
 	Client *github.Client
 	Logger *slog.Logger
 }
 
-type Repo struct {
-	Name       string
-	FullName   string
-	OwnerLogin string
+type CheckRunStatus struct {
+	ID         int64
+	ExternalID string
+	Status     string
 }
 
 type CreateCheckRunActivityArgs struct {
@@ -25,12 +23,6 @@ type CreateCheckRunActivityArgs struct {
 	HeadSha    string
 	ExternalId string
 	Repo       Repo
-}
-
-type CheckRunStatus struct {
-	ID         int64
-	ExternalID string
-	Status     string
 }
 
 func (a *GitHubActivities) CreateCheckRun(ctx context.Context, param CreateCheckRunActivityArgs) (*CheckRunStatus, error) {

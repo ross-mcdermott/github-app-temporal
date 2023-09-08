@@ -13,6 +13,12 @@ type GithubCheckSuiteArgs struct {
 	Repo       Repo
 }
 
+type Repo struct {
+	Name       string
+	FullName   string
+	OwnerLogin string
+}
+
 type GitHubCheckWorkflowDefinitionResult struct {
 	ExternalID string
 	Status     string
