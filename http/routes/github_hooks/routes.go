@@ -44,13 +44,17 @@ func RegisterRoutes(router chi.Router, logger *slog.Logger, client temporal.Clie
 
 			switch event := event.(type) {
 			case *github.CheckSuiteEvent:
-				HandleCheckSuiteEvent(ctx, childLogger, event, client)
+				err = handleCheckSuiteEvent(ctx, childLogger, event, client)
 			case *github.CheckRunEvent:
-				HandleCheckRunEvent(ctx, childLogger, event, client)
+				err = handleCheckRunEvent(ctx, childLogger, event, client)
 			case *github.PullRequestEvent:
-				HandlePullRequestEvent(ctx, childLogger, event)
+				err = handlePullRequestEvent(ctx, childLogger, event)
 			default:
-				UnknownEvent(ctx, childLogger, event)
+				err = UnknownEvent(ctx, childLogger, event)
+			}
+
+			if err != nil {
+				childLogger.Error(err.Error())
 			}
 		})
 	})

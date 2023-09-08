@@ -19,7 +19,7 @@ func UnknownEvent(ctx context.Context, logger *slog.Logger, event interface{}) e
 	return nil
 }
 
-func HandlePullRequestEvent(ctx context.Context, logger *slog.Logger, event *github.PullRequestEvent) error {
+func handlePullRequestEvent(ctx context.Context, logger *slog.Logger, event *github.PullRequestEvent) error {
 
 	logger = logger.With(
 		slog.Group("event",
@@ -33,7 +33,7 @@ func HandlePullRequestEvent(ctx context.Context, logger *slog.Logger, event *git
 	return nil
 }
 
-func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *github.CheckSuiteEvent, client temporal.Client) error {
+func handleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *github.CheckSuiteEvent, client temporal.Client) error {
 
 	logger = logger.With(
 		slog.Group("event",
@@ -47,7 +47,6 @@ func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *gith
 	if *event.Action == "requested" || *event.Action == "rerequested" {
 
 		workflowOptions := temporal.StartWorkflowOptions{
-			//ID:        "Your-Custom-Workflow-Id",
 			TaskQueue: "default",
 		}
 
@@ -75,7 +74,7 @@ func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *gith
 
 }
 
-func HandleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github.CheckRunEvent, client temporal.Client) error {
+func handleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github.CheckRunEvent, client temporal.Client) error {
 
 	logger = logger.With(
 		slog.Group("event",
@@ -84,11 +83,11 @@ func HandleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github
 		),
 	)
 
-	// //println(string(b))
-
 	if event.CheckRun.ExternalID != nil {
 
-		logger.Info("Signaling workflow with signal")
+		signalName := strings.ToLower("check_run:" + *event.Action)
+
+		logger.Info("Signaling workflow", slog.String("signal", signalName))
 
 		signal := definitions.CheckRunSignal{
 			ID:         *event.CheckRun.ID,
@@ -96,7 +95,6 @@ func HandleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github
 			Action:     *event.Action,
 		}
 
-		signalName := strings.ToLower("check_run:" + *event.Action)
 		err := client.SignalWorkflow(context.Background(), *event.CheckRun.ExternalID, "", signalName, signal)
 		if err != nil {
 			return err
