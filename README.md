@@ -16,3 +16,4 @@ https://github.com/anchore/grype
 https://docs.github.com/en/apps/creating-github-apps/writing-code-for-a-github-app/building-ci-checks-with-a-github-app
 
 
+```go mod tidy```

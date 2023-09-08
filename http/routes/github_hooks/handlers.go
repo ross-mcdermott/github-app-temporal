@@ -2,14 +2,38 @@ package github_hooks
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
-	"net/http"
+	"strings"
 
-	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/google/go-github/github"
+	"github.com/ross-mcdermott/github-app-temporal/workflows/activities"
+	"github.com/ross-mcdermott/github-app-temporal/workflows/definitions"
+	temporal "go.temporal.io/sdk/client"
 )
 
-func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *github.CheckSuiteEvent) error {
+func UnknownEvent(ctx context.Context, logger *slog.Logger, event interface{}) error {
+
+	logger.Debug(fmt.Sprintf("Unknown event type '%T'. Ignoring.", event))
+
+	return nil
+}
+
+func HandlePullRequestEvent(ctx context.Context, logger *slog.Logger, event *github.PullRequestEvent) error {
+
+	logger = logger.With(
+		slog.Group("event",
+			slog.String("action", *event.Action),
+			slog.String("repo", *event.Repo.FullName),
+		),
+	)
+
+	logger.Info("Handle PR Event")
+
+	return nil
+}
+
+func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *github.CheckSuiteEvent, client temporal.Client) error {
 
 	logger = logger.With(
 		slog.Group("event",
@@ -20,45 +44,38 @@ func HandleCheckSuiteEvent(ctx context.Context, logger *slog.Logger, event *gith
 
 	logger.Info("Handle Check Suite Event")
 
-	// //println(string(b))
-
 	if *event.Action == "requested" || *event.Action == "rerequested" {
 
-		// Action: requested
-		// kick off a temporal workflow at this point to allow the creation of the suite.
+		workflowOptions := temporal.StartWorkflowOptions{
+			//ID:        "Your-Custom-Workflow-Id",
+			TaskQueue: "default",
+		}
 
-		// Wrap the shared transport for use with the integration ID 1 authenticating with installation ID 99.
-		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 385716, 41469183, "poc.pem")
+		var params definitions.GithubCheckSuiteArgs
+		params.Action = *event.Action
+		params.HeadSHA = *event.CheckSuite.HeadSHA
+		params.HeadBranch = *event.CheckSuite.HeadBranch
+		params.Repo = activities.Repo{
+			Name:       *event.Repo.Name,
+			FullName:   *event.Repo.FullName,
+			OwnerLogin: *event.Repo.Owner.Login,
+		}
+
+		workflowRun, err := client.ExecuteWorkflow(context.Background(), workflowOptions, definitions.GitHubCheckWorkflowDefinition, params)
 
 		if err != nil {
 			logger.Error(err.Error())
 			return err
 		}
 
-		// Use installation transport with client.
-		client := github.NewClient(&http.Client{Transport: itr})
-
-		var opts github.CreateCheckRunOptions
-		opts.HeadSHA = *event.CheckSuite.HeadSHA
-		opts.Name = "POC Run"
-		opts.Status = github.String("queued")
-
-		_, _, err = client.Checks.CreateCheckRun(ctx, *event.Repo.Owner.Login, *event.Repo.Name, opts)
-
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-
-		logger.Info("Created Check Run!")
-
+		logger.Debug(workflowRun.GetRunID())
 	}
 
 	return nil
 
 }
 
-func HandleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github.CheckRunEvent) error {
+func HandleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github.CheckRunEvent, client temporal.Client) error {
 
 	logger = logger.With(
 		slog.Group("event",
@@ -67,44 +84,26 @@ func HandleCheckRunEvent(ctx context.Context, logger *slog.Logger, event *github
 		),
 	)
 
-	logger.Info("Handle Check Run Event")
-
 	// //println(string(b))
 
-	if *event.Action == "created" {
+	if event.CheckRun.ExternalID != nil {
 
-		// Wrap the shared transport for use with the integration ID 1 authenticating with installation ID 99.
-		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 385716, 41469183, "poc.pem")
+		logger.Info("Signaling workflow with signal")
 
-		if err != nil {
-			logger.Error(err.Error())
-			return err
+		signal := definitions.CheckRunSignal{
+			ID:         *event.CheckRun.ID,
+			ExternalID: *event.CheckRun.ExternalID,
+			Action:     *event.Action,
 		}
 
-		// Use installation transport with client.
-		client := github.NewClient(&http.Client{Transport: itr})
-
-		var output github.CheckRunOutput
-		output.Title = github.String("Checks Completed")
-		output.Summary = github.String("Organisaitonsal checks have been run.")
-
-		var opts github.UpdateCheckRunOptions
-		opts.Status = github.String("completed")
-		opts.Conclusion = github.String("success")
-		opts.Name = "POC Run"
-		opts.Output = &output
-
-		_, _, err = client.Checks.UpdateCheckRun(ctx, *event.Repo.Owner.Login, *event.Repo.Name, *event.CheckRun.ID, opts)
-
+		signalName := strings.ToLower("check_run:" + *event.Action)
+		err := client.SignalWorkflow(context.Background(), *event.CheckRun.ExternalID, "", signalName, signal)
 		if err != nil {
-			logger.Error(err.Error())
 			return err
 		}
-
-		logger.Info("Completed Check Run!")
-
+	} else {
+		logger.Warn("No external ID set. Ignoring.")
 	}
 
 	return nil
-
 }
