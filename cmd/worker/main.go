@@ -8,8 +8,7 @@ import (
 
 	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/google/go-github/github"
-	"github.com/ross-mcdermott/github-app-temporal/workflows/activities"
-	"github.com/ross-mcdermott/github-app-temporal/workflows/definitions"
+	"github.com/ross-mcdermott/github-app-temporal/workflows"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )
@@ -38,7 +37,7 @@ func main() {
 
 	internalWorker := worker.New(temporalClient, "default", worker.Options{})
 
-	internalWorker.RegisterWorkflow(definitions.GitHubCheckWorkflowDefinition)
+	internalWorker.RegisterWorkflow(workflows.GitHubCheckWorkflowDefinition)
 
 	// Wrap the shared transport for use with the integration ID 1 authenticating with installation ID 99.
 	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 385716, 41469183, "poc.pem")
@@ -46,12 +45,13 @@ func main() {
 	// Use installation transport with client.
 	client := github.NewClient(&http.Client{Transport: itr})
 
-	ghactivities := &activities.GitHubActivities{
+	// Struct contains all the activities related to github
+	ghactivities := &workflows.GitHubActivities{
 		Client: client,
 		Logger: logger,
 	}
 
-	// Use the RegisterActivity
+	// Register the activities that are available
 	internalWorker.RegisterActivity(ghactivities)
 
 	// Run the Worker

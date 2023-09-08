@@ -1,9 +1,8 @@
-package definitions
+package workflows
 
 import (
 	"time"
 
-	"github.com/ross-mcdermott/github-app-temporal/workflows/activities"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -11,7 +10,7 @@ type GithubCheckSuiteArgs struct {
 	Action     string
 	HeadSHA    string
 	HeadBranch string
-	Repo       activities.Repo
+	Repo       Repo
 }
 
 type GitHubCheckWorkflowDefinitionResult struct {
@@ -26,16 +25,14 @@ type CheckRunSignal struct {
 }
 
 func GitHubCheckWorkflowDefinition(ctx workflow.Context, param GithubCheckSuiteArgs) (*GitHubCheckWorkflowDefinitionResult, error) {
-	// Set the options for the Activity Execution.
-	// Either StartToClose Timeout OR ScheduleToClose is required.
-	// Not specifying a Task Queue will default to the parent Workflow Task Queue.
+
 	activityOptions := workflow.ActivityOptions{
 		StartToCloseTimeout: 30 * time.Second,
 	}
 
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
-	createParams := activities.CreateCheckRunActivityArgs{
+	createParams := CreateCheckRunActivityArgs{
 		Name:       "Sample Check",
 		HeadSha:    param.HeadSHA,
 		Repo:       param.Repo,
@@ -43,9 +40,9 @@ func GitHubCheckWorkflowDefinition(ctx workflow.Context, param GithubCheckSuiteA
 	}
 
 	// Use a nil struct pointer to call Activities that are part of a struct.
-	var a *activities.GitHubActivities
+	var a *GitHubActivities
 	// Execute the Activity and wait for the result.
-	var createParamsResult *activities.CheckRunStatus
+	var createParamsResult *CheckRunStatus
 	err := workflow.ExecuteActivity(ctx, a.CreateCheckRun, createParams).Get(ctx, &createParamsResult)
 	if err != nil {
 		return nil, err
@@ -60,7 +57,7 @@ func GitHubCheckWorkflowDefinition(ctx workflow.Context, param GithubCheckSuiteA
 	selector.Select(ctx)
 
 	// we received it now.
-	updateParams := activities.UpdateCheckRunActivityArgs{
+	updateParams := UpdateCheckRunActivityArgs{
 		ID:     createParamsResult.ID,
 		Name:   createParams.Name,
 		Repo:   param.Repo,
@@ -68,7 +65,7 @@ func GitHubCheckWorkflowDefinition(ctx workflow.Context, param GithubCheckSuiteA
 		// no conculsuion at this point
 	}
 
-	var updateParamsResult *activities.CheckRunStatus
+	var updateParamsResult *CheckRunStatus
 	err = workflow.ExecuteActivity(ctx, a.UpdateCheckRun, updateParams).Get(ctx, &updateParamsResult)
 	if err != nil {
 		return nil, err
@@ -78,7 +75,7 @@ func GitHubCheckWorkflowDefinition(ctx workflow.Context, param GithubCheckSuiteA
 	workflow.Sleep(ctx, 10*time.Second)
 
 	// we received it now.
-	updateParams = activities.UpdateCheckRunActivityArgs{
+	updateParams = UpdateCheckRunActivityArgs{
 		ID:         createParamsResult.ID,
 		Name:       createParams.Name,
 		Repo:       param.Repo,

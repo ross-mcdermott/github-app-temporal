@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	ghhooks "github.com/ross-mcdermott/github-app-temporal/http/routes/github_hooks"
-	"github.com/ross-mcdermott/github-app-temporal/http/routes/health"
+	health "github.com/ross-mcdermott/github-app-temporal/http/core"
+	"github.com/ross-mcdermott/github-app-temporal/http/webhooks"
 	"go.temporal.io/sdk/client"
 )
 
@@ -25,7 +25,6 @@ func main() {
 	slog.SetDefault(logger)
 
 	// Create a Temporal Client to communicate with the Temporal Cluster.
-	// A Temporal Client is a heavyweight object that should be created just once per process.
 	temporalClient, err := client.Dial(client.Options{
 		HostPort: client.DefaultHostPort,
 	})
@@ -40,9 +39,15 @@ func main() {
 		w.Write([]byte("TODO"))
 	})
 
-	// Register the routes to serve
-	health.RegisterRoutes(r, logger)
-	ghhooks.RegisterRoutes(r, logger, temporalClient)
+	// Register health check endpoint
+	const health_route = "/healthz"
+	healthCheck := health.NewHealthHandler(logger)
+	healthCheck.Register(r, health_route)
+
+	// Register the github hooks
+	const github_route = "/hooks/github"
+	ghHooks := webhooks.NewGithubHandler(logger, temporalClient, "0695679902")
+	ghHooks.Register(r, github_route)
 
 	// Now start the API
 	http.ListenAndServe(":3000", r)
